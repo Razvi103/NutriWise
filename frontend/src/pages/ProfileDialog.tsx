@@ -84,15 +84,19 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onClose }) => {
         .catch((err) => {
           if (err.message === 'User not found') {
             createUser(userId).then(() => {
-              setProfile({
-                age: null,
-                sex: '',
-                weight: null,
-                height: null,
-                activity_level: '',
-                fitness_goal: '',
-                dietary_preferences: '',
-              });
+              setTimeout(() => {
+                getProfile(userId).then((data) => {
+                  setProfile({
+                    age: data.age || null,
+                    sex: data.sex || '',
+                    weight: data.weight || null,
+                    height: data.height || null,
+                    activity_level: data.activity_level || '',
+                    fitness_goal: data.fitness_goal || '',
+                    dietary_preferences: data.dietary_preferences || '',
+                  });
+                });
+              }, 1000);
             });
           }
         });
@@ -151,7 +155,6 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onClose }) => {
         [name]: value,
       }));
     }
-    // Clear error for this field when user starts typing
     setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 

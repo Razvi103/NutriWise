@@ -18,6 +18,7 @@ import {
   signInWithPopup,
   AuthError,
 } from 'firebase/auth';
+import { createUser } from '../../services/api';
 
 interface AuthFormProps {
   mode: 'login' | 'signup';
@@ -52,7 +53,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
           setIsLoading(false);
           return;
         }
-        await createUserWithEmailAndPassword(auth, data.email, data.password);
+        const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+        const userId = userCredential.user.uid;
+
+        await createUser(userId);
+
         alert('Signup successful! User created.');
         reset();
         navigate('/dashboard');

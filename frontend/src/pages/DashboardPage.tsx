@@ -18,6 +18,8 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ProfileDialog from './ProfileDialog';
 import { TransitionProps } from '@mui/material/transitions';
 import { auth } from '../services/firebase';
+import { getProfile } from '../services/api';
+import { useEffect } from 'react';
 
 const TIMEOUT_DURATION = {
     SAVE: 1200,
@@ -80,6 +82,18 @@ interface UploadFile {
     id: string;
     file: File;
 }
+interface UserProfile {
+    id: string;
+    weight: number | null;
+    height: number | null;
+    age: number | null;
+    sex: string;
+    fitness_goal: string;
+    dietary_preferences: string;
+    activity_level: string;
+    medical_conditions?: string;
+    bmi?: number;
+  }
 
 interface Profile {
     name: string;
@@ -93,17 +107,42 @@ interface Profile {
 
 const DashboardHome: React.FC = () => {
     const [profileOpen, setProfileOpen] = useState(false);
-    const [profile] = useState<Profile>({
-        name: '',
-        age: '',
-        gender: '',
-        weight: '',
-        height: '',
-        activity: '',
-        goal: '',
-    });
+    const [profile, setProfile] = useState<Profile | null>(null);
+    const [loading, setLoading] = useState(true);
+    const user = auth.currentUser;
 
-    const isProfileIncomplete = Object.values(profile).some((value) => !value);
+    useEffect(() => {
+        if (user) {
+            getProfile(user.uid)
+                .then((data: UserProfile) => {
+                    const mappedProfile: Profile = {
+                        name: '',
+                        age: data.age ? data.age.toString() : '',
+                        gender: data.sex || '',
+                        weight: data.weight ? data.weight.toString() : '',
+                        height: data.height ? data.height.toString() : '',
+                        activity: data.activity_level || '',
+                        goal: data.fitness_goal || '',
+                    };
+                    setProfile(mappedProfile);
+                })
+                .catch((error) => {
+                    console.error('Failed to fetch profile:', error);
+                })
+                .finally(() => {
+                    setLoading(false);
+                });
+        } else {
+            setLoading(false);
+        }
+    }, [user]);
+
+    const isProfileIncomplete = !loading && profile ? 
+        Object.entries(profile).some(([key, value]) => {
+            if (key === 'name') return false;
+            return !value || value.trim() === '';
+        }) : 
+        false;
 
     return (
         <Box
@@ -118,7 +157,7 @@ const DashboardHome: React.FC = () => {
                 pb: 8,
             }}
         >
-            {isProfileIncomplete && (
+            {!loading && isProfileIncomplete && (
                 <Box
                     sx={{
                         width: '100%',
@@ -233,7 +272,6 @@ const DashboardHome: React.FC = () => {
                         ))}
                     </Box>
                 </Box>
-                {/* Fitness Plan Week View */}
                 <Box sx={{ mb: 5 }}>
                     <Typography
                         variant="h6"

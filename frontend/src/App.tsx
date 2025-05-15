@@ -29,7 +29,8 @@ import TopNavBar from './components/common/TopNavBar';
 import mainImage from './assets/Main/main.png';
 import main2Image from './assets/Main/main2.png';
 import main3Image from './assets/Main/main3.png';
-import main4Image from './assets/Main/main4.png';
+import main4Image from './assets/Main/mainn.jpeg';
+import main5Image from './assets/Main/main4.png';
 import medicalImage from './assets/Medical/Medical.png';
 import imageAvif from './assets/Workout/image.avif';
 import backgroundImage from './assets/Main/remove_watermark_image_20250514_105621.png';
@@ -150,7 +151,7 @@ const HomePage: React.FC = () => (
         }}
       >
         <FlipCard
-          image={main4Image}
+          image={main5Image}
           title="Personalized Meal Plans"
           description="Delicious and balanced meal plans tailored to your dietary preferences, calorie needs, and fitness objectives."
         />
