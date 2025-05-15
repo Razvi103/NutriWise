@@ -18,7 +18,7 @@ class User(Base):
 
 
     def __init__(self, id: str, height: int = None, weight: int = None, age: int = None, sex: str = None, fitness_goal: str = None,
-                 dietary_prefereces: str = None, activity_level: str = None, medical_conditions: str = None) -> None:
+                 dietary_preferences: str = None, activity_level: str = None, medical_conditions: str = None) -> None:
         self.id = id
         self.height = height
         self.weight = weight
@@ -28,7 +28,7 @@ class User(Base):
         self.bmi = None
         if height and weight:
             self.bmi = weight / ((height/100) ** 2)
-        self.dietary_preferences = dietary_prefereces
+        self.dietary_preferences = dietary_preferences
         self.activity_level = activity_level
         self.medical_conditions = medical_conditions
 

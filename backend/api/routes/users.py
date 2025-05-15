@@ -71,6 +71,8 @@ def create_user(user_id: str, db = Depends(get_db_session)):
 
     logger.info(f"User {user_id} added successfully")
 
+    return "User created successfully!"
+
 @router.patch("/update_profile_data")
 def update_user_details(user_id: str, weight: int, height: int, age: int, sex: str, fitness_goal: str, dietary_preferences: str, activity_level: str, db = Depends(get_db_session)):
     user = db.query(User).filter(User.id == user_id).first()
@@ -86,6 +88,8 @@ def update_user_details(user_id: str, weight: int, height: int, age: int, sex: s
 
     logger.info(f"User profile for {user_id} updated successfully.")
 
+    return "User profile updated successfully!"
+
 @router.patch("/update_medical_conditions")
 def update_medical_conditions(user_id: str, medical_conditions_text, db=Depends(get_db_session)):
     user = db.query(User).filter(User.id == user_id).first()
@@ -100,6 +104,8 @@ def update_medical_conditions(user_id: str, medical_conditions_text, db=Depends(
     db.refresh(user)
 
     logger.info(f"User medical conditions for {user_id} updated successfully.")
+
+    return "User medical conditions updated successfully"
 
 
 

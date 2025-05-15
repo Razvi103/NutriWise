@@ -1,3 +1,7 @@
 fastapi[all]
 sqlalchemy
 uvicorn[standard]
+python-dotenv
+PyPdf2
+langchain
+langchain_openai
