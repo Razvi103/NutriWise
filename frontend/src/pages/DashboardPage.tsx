@@ -17,6 +17,7 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ProfileDialog from './ProfileDialog';
 import { TransitionProps } from '@mui/material/transitions';
+import { auth } from '../services/firebase';
 
 const TIMEOUT_DURATION = {
     SAVE: 1200,
@@ -192,7 +193,7 @@ const DashboardHome: React.FC = () => {
                                             ? 'linear-gradient(120deg, #fffde4 0%, #43cea2 100%)'
                                             : 'rgba(255,255,255,0.80)',
                                     borderRadius: 4,
-                                    boxShadow:
+                                   boxShadow:
                                         idx === todayIdx
                                             ? '0 4px 18px 0 rgba(67,206,162,0.13)'
                                             : '0 2px 8px 0 rgba(67,206,162,0.08)',
@@ -531,6 +532,10 @@ const UploadDocumentsPage: React.FC = () => {
     const [medicalConditions, setMedicalConditions] = useState('');
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const user = auth.currentUser;
+    const userId = user?.uid;
 
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
@@ -579,13 +584,34 @@ const UploadDocumentsPage: React.FC = () => {
         return 'Save';
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
+        if (!userId) {
+            setError('You must be logged in to save medical conditions');
+            return;
+        }
+
         setSaving(true);
-        setTimeout(() => {
-            setSaving(false);
+        setError(null);
+        try {
+            const response = await fetch(`http://localhost:8001/api/users/update_medical_conditions?user_id=${userId}&medical_conditions_text=${encodeURIComponent(medicalConditions)}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save medical conditions');
+            }
+
             setSaved(true);
             setTimeout(() => setSaved(false), TIMEOUT_DURATION.FEEDBACK);
-        }, TIMEOUT_DURATION.SAVE);
+        } catch (error) {
+            console.error('Error saving medical conditions:', error);
+            setError('Failed to save medical conditions. Please try again.');
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -743,11 +769,16 @@ const UploadDocumentsPage: React.FC = () => {
                         placeholder="e.g. Diabetes, Hypertension, Allergies"
                     />
                 </Box>
+                {error && (
+                    <Typography color="error" sx={{ width: '100%', textAlign: 'center' }}>
+                        {error}
+                    </Typography>
+                )}
                 <Button
                     variant="contained"
                     color="primary"
                     onClick={handleSave}
-                    disabled={saving}
+                    disabled={saving || !userId}
                     sx={{
                         mt: 2,
                         fontWeight: 700,
