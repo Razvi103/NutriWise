@@ -44,7 +44,7 @@ const SignupPage: React.FC = () => {
                 justifyContent: { xs: 'center', md: 'flex-start' },
               }}
             >
-              <Logo color="white" />
+              <Logo color="white"/>
             </Box>
             <Typography
               variant="h2"
@@ -88,7 +88,7 @@ const SignupPage: React.FC = () => {
               >
                 Create Account
               </Typography>
-              <AuthForm mode="signup" />
+              <AuthForm mode="signup"/>
             </Paper>
           </Box>
         </Box>

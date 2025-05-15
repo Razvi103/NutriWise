@@ -11,7 +11,7 @@ import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 import { themeColors } from '../../theme';
 import LogoutIcon from '@mui/icons-material/Logout';
-import { ProfileDialog } from '../../pages/DashboardPage';
+import ProfileDialog from '../../pages/ProfileDialog';
 import { auth } from '../../services/firebase';
 
 const navLinks = [
@@ -67,7 +67,7 @@ const TopNavBar: React.FC = () => {
               gap: 2,
             }}
           >
-            <Logo color={themeColors.appBarText} />
+            <Logo color={themeColors.appBarText}/>
           </Box>
           <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2 }}>
             {navLinks.map((link) => (
@@ -104,7 +104,7 @@ const TopNavBar: React.FC = () => {
             <Button
               variant="contained"
               color="primary"
-              startIcon={<LogoutIcon />}
+              startIcon={<LogoutIcon/>}
               onClick={handleLogout}
               sx={{
                 background: themeColors.accent,
@@ -145,7 +145,7 @@ const TopNavBar: React.FC = () => {
           </Box>
         </Toolbar>
       </AppBar>
-      <ProfileDialog open={profileOpen} onClose={() => setProfileOpen(false)} />
+      <ProfileDialog open={profileOpen} onClose={() => setProfileOpen(false)}/>
     </>
   );
 };

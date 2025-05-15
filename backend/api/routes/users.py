@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from fastapi import APIRouter, FastAPI, Depends, List
+from fastapi import APIRouter, FastAPI, Depends
 from models.user import User
 from data.database import get_db_session
 from fastapi.exceptions import HTTPException

@@ -44,7 +44,7 @@ const LoginPage: React.FC = () => {
                 justifyContent: { xs: 'center', md: 'flex-start' },
               }}
             >
-              <Logo color="white" />
+              <Logo color="white"/>
             </Box>
             <Typography
               variant="h2"
@@ -88,7 +88,7 @@ const LoginPage: React.FC = () => {
               >
                 Sign In
               </Typography>
-              <AuthForm mode="login" />
+              <AuthForm mode="login"/>
             </Paper>
           </Box>
         </Box>

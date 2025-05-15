@@ -49,7 +49,7 @@ const HomePage: React.FC = () => (
           to="/"
           sx={{ textDecoration: 'none', flexGrow: 1 }}
         >
-          <Logo color={themeColors.appBarText} />
+          <Logo color={themeColors.appBarText}/>
         </Box>
         <Button
           color="inherit"
@@ -191,37 +191,37 @@ const HomePage: React.FC = () => (
 function App() {
   return (
     <Router>
-      <CssBaseline />
+      <CssBaseline/>
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/" element={<HomePage/>}/>
+        <Route path="/login" element={<LoginPage/>}/>
+        <Route path="/signup" element={<SignupPage/>}/>
         <Route
           path="/dashboard"
-          element={
+          element={(
             <>
-              <TopNavBar />
-              <DashboardHome />
+              <TopNavBar/>
+              <DashboardHome/>
             </>
-          }
+          )}
         />
         <Route
           path="/generate"
-          element={
+          element={(
             <>
-              <TopNavBar />
-              <GeneratePlanPage />
+              <TopNavBar/>
+              <GeneratePlanPage/>
             </>
-          }
+          )}
         />
         <Route
           path="/upload"
-          element={
+          element={(
             <>
-              <TopNavBar />
-              <UploadDocumentsPage />
+              <TopNavBar/>
+              <UploadDocumentsPage/>
             </>
-          }
+          )}
         />
       </Routes>
     </Router>
