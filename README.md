@@ -1,10 +1,9 @@
 # NutriWise
 
-## Linter and Formatter Commands
+# Run the app
 
 ```
-cd frontend
-npx prettier --write .
-npx eslint --fix .
-
+npm start
 ```
+
+
