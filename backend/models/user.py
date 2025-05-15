@@ -32,7 +32,7 @@ class User(Base):
         self.activity_level = activity_level
         self.medical_conditions = medical_conditions
 
-    def update_profile_data(self, height: int, weight: int, age: int, sex: str, fitness_goal: str, dietary_preferences: str,
+    def update_profile_data(self, weight: int, height: int, age: int, sex: str, fitness_goal: str, dietary_preferences: str,
                             activity_level: str) -> None:
         self.height = height
         self.weight = weight
