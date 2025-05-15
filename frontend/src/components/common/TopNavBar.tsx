@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -13,6 +13,7 @@ import { themeColors } from '../../theme';
 import LogoutIcon from '@mui/icons-material/Logout';
 import ProfileDialog from '../../pages/ProfileDialog';
 import { auth } from '../../services/firebase';
+import { getProfile } from '../../services/api';
 
 const navLinks = [
   { label: 'Dashboard', to: '/dashboard' },
@@ -20,18 +21,26 @@ const navLinks = [
   { label: 'Upload Documents', to: '/upload' },
 ];
 
+interface ProfileData {
+  age: number | null;
+  sex: string;
+  weight: number | null;
+  height: number | null;
+  activity_level: string;
+  fitness_goal: string;
+  dietary_preferences: string;
+}
+
 const TopNavBar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
   const user = auth.currentUser;
   const email = user?.email || '';
+
   const getInitials = () => {
-    if (!email) {
-      return 'U';
-    }
-    const namePart = email.split('@')[0];
-    return namePart.slice(0, 2).toUpperCase();
+    if (!email) return 'U';
+    return email.split('@')[0].slice(0, 2).toUpperCase();
   };
 
   const handleLogout = () => {
