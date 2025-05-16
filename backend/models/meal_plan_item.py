@@ -13,7 +13,7 @@ class MealPlanItem(Base):
     dinner = Column(String(255))
     snack = Column(String(255))
     macros = Column(String(255))
-    meal_plan_id = Column(Integer, ForeignKey("meal_plans.id"), nullable=False)
+    meal_plan_id = Column(Integer, ForeignKey("meal_plans.id", ondelete='CASCADE'), nullable=False)
     meal_plan = relationship(MealPlan)
 
     def __init__(self, breakfast, lunch, dinner, snack, meal_slot, macros, meal_plan_id) -> None:

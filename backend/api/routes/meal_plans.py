@@ -11,7 +11,7 @@ from models.health_report import HealthReport
 from pydantic import BaseModel
 from sqlalchemy import desc
 from datetime import date
-from ..services.meal_plan_formatter import strip_json_prefix
+from ..services.meal_plan_formatter import strip_json_prefix, strip_json_suffix
 import json
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ llm_model = "phi-4"
 llm = ChatOpenAI(
     base_url=base_url,
     api_key=api_key,
-    temperature=0.1,
+    temperature=0.25,
     model=llm_model
 )
 
@@ -51,55 +51,47 @@ class MealItemResponse(BaseModel):
         from_attributes = True
 
 
-# @router.get("/get_user_meal_plan")
-# def get_user_most_recent_meal_plan(user_id : str, db_session=Depends(get_db_session)):
-#     logger.info(f"Getting User {user_id} most recent meal plan")
+@router.get("/get_user_meal_plan")
+def get_user_most_recent_meal_plan(user_id : str, db_session=Depends(get_db_session)):
+    logger.info(f"Getting User {user_id} most recent meal plan")
 
-#     latest_plan = (
-#         db_session.query(MealPlan)
-#         .filter(MealPlan.user_id == user_id)
-#         .order_by(desc(MealPlan.date_created))
-#         .limit(1)
-#         .one_or_none()
-#     )
+    latest_plan = db_session.query(MealPlan).filter(MealPlan.user_id == user_id).first()
 
-#     if latest_plan is None:
-#         logger.exception(f"No meal plan for user_id {user_id} found")
-#         raise HTTPException(status_code=404, detail="Meal plan not found")
+    if latest_plan is None:
+        logger.exception(f"No meal plan for user_id {user_id} found")
+        raise HTTPException(status_code=404, detail="Meal plan not found")
 
-#     items = (
-#         db_session.query(MealPlanItem)
-#         .filter(MealPlanItem.meal_plan_id == latest_plan.id)
-#         .all()
-#     )
+    items = (
+        db_session.query(MealPlanItem)
+        .filter(MealPlanItem.meal_plan_id == latest_plan.id)
+        .all()
+    )
 
-#     items_data = [
-#         {
-#             "id": item.id,
-#             "breakfast": item.breakfast,
-#             "lunch": item.lunch,
-#             "dinner": item.dinner,
-#             "snack": item.snack,
-#             "meal_slot": item.meal_slot,
-#             "macros": item.macros,
-#         }
-#         for item in items
-#     ]
-#     content = json.dumps({
-#         "meal_plan_id": latest_plan.id,
-#         "name": latest_plan.name,
-#         "description": latest_plan.description,
-#         "date_created": str(latest_plan.date_created),
-#         "meal_plan_items": items_data
-#     })
+    items_data = [
+        {
+            "id": item.id,
+            "breakfast": item.breakfast,
+            "lunch": item.lunch,
+            "dinner": item.dinner,
+            "snack": item.snack,
+            "meal_slot": item.meal_slot,
+            "macros": item.macros,
+        }
+        for item in items
+    ]
+    content = json.dumps({
+        "meal_plan_id": latest_plan.id,
+        "name": latest_plan.name,
+        "description": latest_plan.description,
+        "date_created": str(latest_plan.date_created),
+        "plan": items_data
+    })
 
-#     return JSONResponse(content=content)
+    return JSONResponse(content=content)
 
 
-@router.get("/create_meal_plan")
+@router.post("/create_meal_plan")
 def create_meal_plan(user_id: str, db_session = Depends(get_db_session)):
-    created_date = date.today()
-
     user = db_session.query(User).filter(User.id == user_id).first()
     health_report = db_session.query(HealthReport).filter(HealthReport.user_id == user_id).first()
     health_report_text = None
@@ -167,6 +159,42 @@ Remember to respond always with a valid JSON format!
     """
     response = llm.invoke([HumanMessage(content=PROMPT)])
     response_text = response.content
-    
+    response_text = strip_json_suffix(strip_json_prefix(response_text))
+    json_response_text = json.loads(response_text)
 
-    return JSONResponse(content=strip_json_prefix(response_text))
+    old_plan = db_session.query(MealPlan).filter(MealPlan.user_id == user_id).first()
+    if old_plan:
+        old_plan_id = old_plan.id
+        all_meal_items = db_session.query(MealPlanItem).filter(MealPlanItem.meal_plan_id == old_plan_id).all()
+        for meal_item in all_meal_items:
+            db_session.delete(meal_item)
+        db_session.delete(old_plan)
+
+        db_session.commit()
+        print("Old plan DELETED")
+
+
+    plan_name = json_response_text["name"]
+    plan_descr = json_response_text["description"]
+
+    new_plan = MealPlan(user_id, plan_name, plan_descr, date.today())
+
+    db_session.add(new_plan)
+    db_session.flush() # needed to access the new_plan id before commiting
+
+    plan_id = new_plan.id
+    plan_list = json_response_text["plan"]
+    for plan in plan_list:
+        day = plan["meal_slot"]
+        breakfast = plan["breakfast"]
+        lunch = plan["lunch"]
+        dinner = plan["dinner"]
+        snack = plan["snack"]
+        macros = plan["macros"]
+
+        new_meal_item = MealPlanItem(breakfast, lunch, dinner, snack, day, macros, plan_id)
+        db_session.add(new_meal_item)
+
+    db_session.commit()
+
+    return "Meal plan created SUCCESSFULLY"
