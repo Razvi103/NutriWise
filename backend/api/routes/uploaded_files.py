@@ -53,7 +53,7 @@ def get_user_report(user_id : str, db_session=Depends(get_db_session)):
 
 
 @router.post("/process_file")
-def work_file(response: Response, user_id: str, uploaded_file: UploadFile, db_session=Depends(get_db_session)):
+def work_file(user_id: str, uploaded_file: UploadFile, db_session=Depends(get_db_session)):
     logger.info(uploaded_file.headers["content-type"])
 
     text = extract_text(uploaded_file, uploaded_file.headers["content-type"])
