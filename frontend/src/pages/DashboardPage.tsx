@@ -627,26 +627,51 @@ const UploadDocumentsPage: React.FC = () => {
             setError('You must be logged in to save medical conditions');
             return;
         }
-
+    
         setSaving(true);
         setError(null);
+        
         try {
-            const response = await fetch(`http://localhost:8001/api/users/update_medical_conditions?user_id=${userId}&medical_conditions_text=${encodeURIComponent(medicalConditions)}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
+            if (medicalConditions.trim()) {
+                const medicalResponse = await fetch(
+                    `http://localhost:8001/api/users/update_medical_conditions?user_id=${userId}&medical_conditions_text=${encodeURIComponent(medicalConditions)}`, 
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    }
+                );
+    
+                if (!medicalResponse.ok) {
+                    throw new Error('Failed to save medical conditions');
                 }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to save medical conditions');
             }
-
+    
+            if (files.length > 0) {
+                if (files.length > 1) {
+                    setError('Only one file can be uploaded at a time');
+                    return;
+                }
+    
+                const formData = new FormData();
+                formData.append('uploaded_file', files[0].file);
+                
+                const fileResponse = await fetch(`http://localhost:8001/api/files/process_file?user_id=${userId}`, {
+                    method: 'POST',
+                    body: formData,
+                });
+    
+                if (!fileResponse.ok) {
+                    throw new Error('Failed to upload file');
+                }
+            }
+    
             setSaved(true);
             setTimeout(() => setSaved(false), TIMEOUT_DURATION.FEEDBACK);
         } catch (error) {
-            console.error('Error saving medical conditions:', error);
-            setError('Failed to save medical conditions. Please try again.');
+            console.error('Error saving data:', error);
+            setError('Failed to save data. Please try again.');
         } finally {
             setSaving(false);
         }
@@ -750,7 +775,7 @@ const UploadDocumentsPage: React.FC = () => {
                         />
                     </Button>
                     <Typography variant="caption" sx={{ color: '#757575', mt: 1 }}>
-                        Allowed: PDF, JPG, PNG (max 5MB each)
+                        Allowed: PDF (max 5MB each)
                     </Typography>
                 </Box>
                 {files.length > 0 && (
