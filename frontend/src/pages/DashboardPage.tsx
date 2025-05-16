@@ -1,25 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-    Box,
-    Typography,
-    Avatar,
-    Button,
-    Card,
-    CardContent,
-    TextField,
-    CircularProgress,
-    Slide,
+  Box,
+  Typography,
+  Avatar,
+  Button,
+  Card,
+  Tooltip,
+  CircularProgress,
+  Slide,
+  TextField,
 } from '@mui/material';
-import mainBg from '../assets/Main/main3.png';
-import mealImg from '../assets/Meal/mealplans.png';
-import fitnessImg from '../assets/Workout/18-gym-constanta-sala-fitness-14.png';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import ProfileDialog from './ProfileDialog';
 import { TransitionProps } from '@mui/material/transitions';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { auth } from '../services/firebase';
-import { getProfile } from '../services/api';
-import { useEffect } from 'react';
+import { getProfile, createMealPlan } from '../services/api';
+import ProfileDialog from './ProfileDialog';
+import mealImg from '../assets/Meal/mealplans.png';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+
+interface UserProfile {
+  name: string;
+  age: string;
+  gender: string;
+  weight: string;
+  height: string;
+  activity: string;
+  goal: string;
+}
+
+interface MealPlanDay {
+  meal_slot: string;
+  breakfast: string;
+  lunch: string;
+  dinner: string;
+  snack: string;
+  macros: string;
+}
+
+interface UploadFile {
+  id: string;
+  file: File;
+}
 
 const TIMEOUT_DURATION = {
     SAVE: 1200,
@@ -27,532 +49,300 @@ const TIMEOUT_DURATION = {
 };
 
 const DAYS_IN_WEEK = 7;
-const todayIdx =
-    new Date().getDay() === 0 ? DAYS_IN_WEEK - 1 : new Date().getDay() - 1;
-
-const mealPlans = [
-    { day: 'Mon', summary: 'Chicken, rice, salad', img: mealImg },
-    { day: 'Tue', summary: 'Fish, quinoa, veggies', img: mealImg },
-    { day: 'Wed', summary: 'Beef, potatoes, greens', img: mealImg },
-    { day: 'Thu', summary: 'Pasta, turkey, salad', img: mealImg },
-    { day: 'Fri', summary: 'Eggs, toast, avocado', img: mealImg },
-    { day: 'Sat', summary: 'Salmon, couscous, veg', img: mealImg },
-    { day: 'Sun', summary: 'Chicken, rice, salad', img: mealImg },
-];
-
-const fitnessPlans = [
-    { day: 'Mon', summary: 'Cardio + Core', img: fitnessImg },
-    { day: 'Tue', summary: 'Upper Body Strength', img: fitnessImg },
-    { day: 'Wed', summary: 'Yoga & Mobility', img: fitnessImg },
-    { day: 'Thu', summary: 'Lower Body Strength', img: fitnessImg },
-    { day: 'Fri', summary: 'HIIT', img: fitnessImg },
-    { day: 'Sat', summary: 'Active Rest', img: fitnessImg },
-    { day: 'Sun', summary: 'Full Body', img: fitnessImg },
+const todayIdx = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
+const motivationalQuotes = [
+  'Every step counts. Start your journey today!',
+  'Small changes make a big difference.',
+  'Your health is your wealth.',
+  'Consistency beats intensity.',
+  'Fuel your body, empower your life.',
 ];
 
 const glassCard = {
-    minWidth: 320,
-    maxWidth: 400,
-    p: 0,
-    borderRadius: 5,
-    boxShadow: 6,
-    background: 'rgba(255,255,255,0.80)',
-    backdropFilter: 'blur(10px)',
-    border: '1.5px solid rgba(255,255,255,0.25)',
-    transition: 'transform 0.18s, box-shadow 0.18s',
-    '&:hover': {
-        transform: 'translateY(-6px) scale(1.03)',
-        boxShadow: 12,
-    },
+  minWidth: 320,
+  maxWidth: 400,
+  p: 0,
+  borderRadius: 5,
+  boxShadow: 6,
+  background: 'rgba(255,255,255,0.80)',
+  backdropFilter: 'blur(10px)',
+  border: '1.5px solid rgba(255,255,255,0.25)',
+  transition: 'transform 0.18s, box-shadow 0.18s',
+  '&:hover': {
+    transform: 'translateY(-6px) scale(1.03)',
+    boxShadow: 12,
+  },
 };
 
-const motivationalQuotes = [
-    'Every step counts. Start your journey today!',
-    'Small changes make a big difference.',
-    'Your health is your wealth.',
-    'Consistency beats intensity.',
-    'Fuel your body, empower your life.',
-];
+const DashboardHome = () => {
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [plan, setPlan] = useState<MealPlanDay[]>([]);
+  const location = useLocation();
+  const user = auth.currentUser;
 
-const animatedGradient = `linear-gradient(120deg, #43cea2 0%, #185a9d 100%)`;
+  useEffect(() => {
+    console.log('DashboardHome location object:', location);
+    if (location.state?.generatedPlan) {
+      console.log('Received generatedPlan in DashboardHome:', location.state.generatedPlan);
+      setPlan(location.state.generatedPlan as MealPlanDay[]);
+    } else {
+      console.log('No generatedPlan found in location.state for DashboardHome.');
+    }
+  }, [location, location.state]);
 
-const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  useEffect(() => {
+    console.log('DashboardHome plan state updated:', plan);
+  }, [plan]);
 
-interface UploadFile {
-    id: string;
-    file: File;
-}
-interface UserProfile {
-    id: string;
-    weight: number | null;
-    height: number | null;
-    age: number | null;
-    sex: string;
-    fitness_goal: string;
-    dietary_preferences: string;
-    activity_level: string;
-    medical_conditions?: string;
-    bmi?: number;
-  }
+  useEffect(() => {
+    if (user) {
+      getProfile(user.uid)
+        .then((data) => {
+          setProfile({
+            name: '',
+            age: data.age?.toString() || '',
+            gender: data.sex || '',
+            weight: data.weight?.toString() || '',
+            height: data.height?.toString() || '',
+            activity: data.activity_level || '',
+            goal: data.fitness_goal || '',
+          });
+        })
+        .catch(error => {
+          console.error("Failed to fetch profile:", error);
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
-interface Profile {
-    name: string;
-    age: string;
-    gender: string;
-    weight: string;
-    height: string;
-    activity: string;
-    goal: string;
-}
+  const isProfileIncomplete =
+    !loading &&
+    profile &&
+    Object.entries(profile).some(([key, value]) => {
+      if (key === 'name') return false;
+      return !value || (typeof value === 'string' && value.trim() === '');
+    });
 
-const DashboardHome: React.FC = () => {
-    const [profileOpen, setProfileOpen] = useState(false);
-    const [profile, setProfile] = useState<Profile | null>(null);
-    const [loading, setLoading] = useState(true);
-    const user = auth.currentUser;
-
-    useEffect(() => {
-        if (user) {
-            getProfile(user.uid)
-                .then((data: UserProfile) => {
-                    const mappedProfile: Profile = {
-                        name: '',
-                        age: data.age ? data.age.toString() : '',
-                        gender: data.sex || '',
-                        weight: data.weight ? data.weight.toString() : '',
-                        height: data.height ? data.height.toString() : '',
-                        activity: data.activity_level || '',
-                        goal: data.fitness_goal || '',
-                    };
-                    setProfile(mappedProfile);
-                })
-                .catch((error) => {
-                    console.error('Failed to fetch profile:', error);
-                })
-                .finally(() => {
-                    setLoading(false);
-                });
-        } else {
-            setLoading(false);
-        }
-    }, [user]);
-
-    const isProfileIncomplete = !loading && profile ? 
-        Object.entries(profile).some(([key, value]) => {
-            if (key === 'name') return false;
-            return !value || value.trim() === '';
-        }) : 
-        false;
-
-    return (
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        width: '100%',
+        background: 'linear-gradient(120deg, #43cea2 0%, #185a9d 100%)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        pb: 8,
+      }}
+    >
+      {!loading && isProfileIncomplete && (
         <Box
-            sx={{
-                minHeight: '100vh',
-                width: '100%',
-                background: 'linear-gradient(120deg, #43cea2 0%, #185a9d 100%)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'flex-start',
-                pb: 8,
-            }}
+          sx={{
+            width: '100%',
+            background: 'linear-gradient(90deg, #fffbe7 0%, #fffde4 100%)',
+            color: '#004D40',
+            py: 1.2,
+            textAlign: 'center',
+            boxShadow: '0 2px 8px 0 rgba(255,193,7,0.08)',
+            fontWeight: 600,
+            fontSize: 17,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 2,
+          }}
         >
-            {!loading && isProfileIncomplete && (
-                <Box
-                    sx={{
-                        width: '100%',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 10,
-                        background: 'linear-gradient(90deg, #fffbe7 0%, #fffde4 100%)',
-                        color: '#004D40',
-                        px: { xs: 2, md: 0 },
-                        py: 1.2,
-                        textAlign: 'center',
-                        boxShadow: '0 2px 8px 0 rgba(255,193,7,0.08)',
-                        fontWeight: 600,
-                        fontSize: 17,
-                        letterSpacing: 0.2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 2,
-                    }}
-                >
-                    <span>
-                        Please complete your profile for personalized recommendations.
-                    </span>
-                    <Button
-                        variant="contained"
-                        sx={{
-                            ml: 2,
-                            background: 'linear-gradient(90deg, #FFC107 0%, #43cea2 100%)',
-                            color: '#004D40',
-                            fontWeight: 700,
-                            borderRadius: 2,
-                            px: 2.5,
-                            py: 0.7,
-                            fontSize: 15,
-                            boxShadow: 1,
-                            '&:hover': {
-                                background: 'linear-gradient(90deg, #43cea2 0%, #FFC107 100%)',
-                                color: '#004D40',
-                            },
-                        }}
-                        onClick={() => setProfileOpen(true)}
-                    >
-                        Complete Profile
-                    </Button>
-                </Box>
-            )}
-            <Box sx={{ width: '100%', maxWidth: 1100, mt: 6, px: 2 }}>
-                <Typography
-                    variant="h4"
-                    sx={{ color: '#fff', fontWeight: 800, mb: 3, letterSpacing: 1 }}
-                >
-                    Your Active Plans
-                </Typography>
-                {/* Meal Plan Week View */}
-                <Box sx={{ mb: 5 }}>
-                    <Typography
-                        variant="h6"
-                        sx={{ color: '#FFC107', fontWeight: 700, mb: 1 }}
-                    >
-                        Meal Plan (This Week)
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto', pb: 1 }}>
-                        {mealPlans.map((plan, idx) => (
-                            <Box
-                                key={plan.day}
-                                sx={{
-                                    minWidth: 150,
-                                    maxWidth: 180,
-                                    background:
-                                        idx === todayIdx
-                                            ? 'linear-gradient(120deg, #fffde4 0%, #43cea2 100%)'
-                                            : 'rgba(255,255,255,0.80)',
-                                    borderRadius: 4,
-                                   boxShadow:
-                                        idx === todayIdx
-                                            ? '0 4px 18px 0 rgba(67,206,162,0.13)'
-                                            : '0 2px 8px 0 rgba(67,206,162,0.08)',
-                                    border:
-                                        idx === todayIdx
-                                            ? '2px solid #FFC107'
-                                            : '1.5px solid rgba(67,206,162,0.13)',
-                                    p: 2,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    transition: 'box-shadow 0.18s, border 0.18s',
-                                }}
-                            >
-                                <Typography
-                                    variant="subtitle2"
-                                    sx={{
-                                        color: idx === todayIdx ? '#FFC107' : '#004D40',
-                                        fontWeight: 700,
-                                        mb: 1,
-                                    }}
-                                >
-                                    {plan.day}
-                                </Typography>
-                                <Avatar
-                                    src={plan.img}
-                                    alt={plan.day}
-                                    sx={{ width: 44, height: 44, mb: 1, bgcolor: '#fff' }}
-                                />
-                                <Typography
-                                    variant="body2"
-                                    sx={{ color: '#004D40', textAlign: 'center' }}
-                                >
-                                    {plan.summary}
-                                </Typography>
-                            </Box>
-                        ))}
-                    </Box>
-                </Box>
-                <Box sx={{ mb: 5 }}>
-                    <Typography
-                        variant="h6"
-                        sx={{ color: '#43cea2', fontWeight: 700, mb: 1 }}
-                    >
-                        Fitness Plan (This Week)
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto', pb: 1 }}>
-                        {fitnessPlans.map((plan, idx) => (
-                            <Box
-                                key={plan.day}
-                                sx={{
-                                    minWidth: 150,
-                                    maxWidth: 180,
-                                    background:
-                                        idx === todayIdx
-                                            ? 'linear-gradient(120deg, #e0f7fa 0%, #43cea2 100%)'
-                                            : 'rgba(255,255,255,0.80)',
-                                    borderRadius: 4,
-                                    boxShadow:
-                                        idx === todayIdx
-                                            ? '0 4px 18px 0 rgba(67,206,162,0.13)'
-                                            : '0 2px 8px 0 rgba(67,206,162,0.08)',
-                                    border:
-                                        idx === todayIdx
-                                            ? '2px solid #43cea2'
-                                            : '1.5px solid rgba(67,206,162,0.13)',
-                                    p: 2,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    transition: 'box-shadow 0.18s, border 0.18s',
-                                }}
-                            >
-                                <Typography
-                                    variant="subtitle2"
-                                    sx={{
-                                        color: idx === todayIdx ? '#43cea2' : '#004D40',
-                                        fontWeight: 700,
-                                        mb: 1,
-                                    }}
-                                >
-                                    {plan.day}
-                                </Typography>
-                                <Avatar
-                                    src={plan.img}
-                                    alt={plan.day}
-                                    sx={{ width: 44, height: 44, mb: 1, bgcolor: '#fff' }}
-                                />
-                                <Typography
-                                    variant="body2"
-                                    sx={{ color: '#004D40', textAlign: 'center' }}
-                                >
-                                    {plan.summary}
-                                </Typography>
-                            </Box>
-                        ))}
-                    </Box>
-                </Box>
-            </Box>
-            <ProfileDialog open={profileOpen} onClose={() => setProfileOpen(false)} />
+          Please complete your profile for personalized recommendations.
+          <Button
+            variant="contained"
+            sx={{ ml: 2, background: 'linear-gradient(90deg, #FFC107 0%, #43cea2 100%)' }}
+            onClick={() => setProfileOpen(true)}
+          >
+            Complete Profile
+          </Button>
         </Box>
-    );
-};
+      )}
 
-const pageBg = {
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: `linear-gradient(rgba(67,206,162,0.7), rgba(24,90,157,0.7)), url(${mainBg})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    p: 5,
-};
+      <Box sx={{ width: '100%', maxWidth: 1100, mt: 6, px: 2 }}>
+        <Typography variant="h3" sx={{ color: '#fff', fontWeight: 800, mb: 2, textAlign: 'center' }}>
+          Your Personalized Meal Plan
+        </Typography>
+        <Typography variant="h6" sx={{ color: '#FFC107', mb: 4, textAlign: 'center' }}>
+          {motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]}
+        </Typography>
 
-const GeneratePlanPage: React.FC = () => {
-    const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<string | null>(null);
-
-    const handleGenerate = () => {
-        setLoading(true);
-        setTimeout(() => {
-            setResult('Your new AI-generated plan is ready! 🎉');
-            setLoading(false);
-        }, TIMEOUT_DURATION.FEEDBACK);
-    };
-
-    return (
-        <Box
-            sx={{
-                minHeight: '100vh',
-                width: '100%',
-                background: 'linear-gradient(120deg, #43cea2 0%, #185a9d 100%)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                pb: 0,
-            }}
+        <Button
+          variant="outlined"
+          onClick={() => window.print()}
+          sx={{ mb: 4, color: '#004D40', borderColor: '#FFC107', fontWeight: 600 }}
         >
-            <Box
-                sx={{
-                    width: '100%',
-                    maxWidth: 700,
-                    mb: 4,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 2,
-                    px: 4,
-                }}
-            >
-                <AutoAwesomeIcon
-                    sx={{
-                        fontSize: 48,
-                        color: '#FFC107',
-                        mb: 1,
-                        filter: 'drop-shadow(0 2px 8px #fffbe7)',
-                    }}
-                />
-                <Typography
-                    variant="h2"
-                    sx={{
-                        color: '#fff',
-                        fontWeight: 900,
-                        textShadow: '0 2px 12px rgba(0,0,0,0.18)',
-                        letterSpacing: 1,
-                        mb: 1,
-                        textAlign: 'center',
-                    }}
-                >
-                    Let&apos;s create your next plan!
-                </Typography>
-                <Typography
-                    variant="h5"
-                    sx={{
-                        color: '#FFC107',
-                        fontWeight: 400,
-                        textShadow: '0 1px 6px rgba(0,0,0,0.10)',
-                        textAlign: 'center',
-                        maxWidth: 540,
-                    }}
-                >
-                    Our AI will generate a personalized meal and fitness plan for you.
-                </Typography>
-                <Box
-                    sx={{
-                        width: 60,
-                        height: 4,
-                        borderRadius: 2,
-                        background: 'linear-gradient(90deg, #FFC107 0%, #43cea2 100%)',
-                        mt: 2,
-                        mb: 1,
-                    }}
-                />
-            </Box>
+          Print or Export to PDF
+        </Button>
 
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' },
+            gap: 3,
+          }}
+        >
+          {plan.map((day, idx) => (
             <Card
-                sx={{
-                    ...glassCard,
-                    width: '100%',
-                    maxWidth: 500,
-                    background: 'rgba(255,255,255,0.95)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1.5px solid rgba(67,206,162,0.10)',
-                    p: 4,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 3,
-                    boxShadow: 8,
-                }}
+              key={day.meal_slot}
+              sx={{
+                p: 2,
+                borderRadius: 4,
+                background:
+                  idx === todayIdx
+                    ? 'linear-gradient(120deg, #fffde4 0%, #43cea2 100%)'
+                    : 'rgba(255,255,255,0.9)',
+              }}
             >
-                <Typography
-                    variant="h5"
-                    sx={{ color: '#004D40', fontWeight: 'bold', textAlign: 'center' }}
-                >
-                    Ready to transform your health journey?
-                </Typography>
-                <Typography
-                    variant="body1"
-                    sx={{ color: '#00796B', textAlign: 'center', mb: 2 }}
-                >
-                    Click the button below to generate your personalized plan based on
-                    your profile and goals.
-                </Typography>
-                <Button
-                    variant="contained"
-                    onClick={handleGenerate}
-                    disabled={loading}
-                    sx={{
-                        px: 6,
-                        py: 2,
-                        fontWeight: 'bold',
-                        fontSize: 20,
-                        borderRadius: 3,
-                        background: 'linear-gradient(90deg, #FFC107 0%, #43cea2 100%)',
-                        color: '#004D40',
-                        boxShadow: 2,
-                        transition: 'transform 0.18s, box-shadow 0.18s',
-                        '&:hover': {
-                            background: 'linear-gradient(90deg, #43cea2 0%, #FFC107 100%)',
-                            color: '#004D40',
-                            transform: 'scale(1.04)',
-                            boxShadow: 8,
-                        },
-                    }}
-                >
-                    {loading ? (
-                        <CircularProgress size={28} color="inherit" />
-                    ) : (
-                        'Generate My Plan'
-                    )}
-                </Button>
+              <Typography
+                variant="h6"
+                sx={{ color: idx === todayIdx ? '#FFC107' : '#004D40', fontWeight: 'bold', mb: 1 }}
+              >
+                {day.meal_slot}
+              </Typography>
+              <Avatar src={mealImg} sx={{ width: 44, height: 44, mb: 1 }} />
+              <Tooltip title={day.macros} arrow placement="top">
+                <Box sx={{ cursor: 'help' }}>
+                  <Typography variant="body2" sx={{ color: '#004D40', whiteSpace: 'pre-line' }}>
+                    <strong>Breakfast:</strong> {day.breakfast}{'\n'}
+                    <strong>Lunch:</strong> {day.lunch}{'\n'}
+                    <strong>Dinner:</strong> {day.dinner}{'\n'}
+                    <strong>Snack:</strong> {day.snack}
+                  </Typography>
+                </Box>
+              </Tooltip>
             </Card>
-
-            {result && (
-                <Card
-                    sx={{
-                        ...glassCard,
-                        width: '100%',
-                        maxWidth: 500,
-                        mt: 4,
-                        border: '2px solid #FFC107',
-                        background: 'rgba(255,255,255,0.95)',
-                        animation: 'slideUp 0.5s ease-out',
-                        '@keyframes slideUp': {
-                            '0%': {
-                                transform: 'translateY(20px)',
-                                opacity: 0,
-                            },
-                            '100%': {
-                                transform: 'translateY(0)',
-                                opacity: 1,
-                            },
-                        },
-                    }}
-                >
-                    <CardContent
-                        sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: 2,
-                            p: 4,
-                        }}
-                    >
-                        <Typography
-                            variant="h5"
-                            sx={{
-                                color: '#004D40',
-                                fontWeight: 'bold',
-                                textAlign: 'center',
-                            }}
-                        >
-                            {result}
-                        </Typography>
-                        <Button
-                            variant="contained"
-                            color="success"
-                            sx={{
-                                px: 4,
-                                py: 1.5,
-                                fontWeight: 'bold',
-                                borderRadius: 2,
-                                background: 'linear-gradient(90deg, #43cea2 0%, #185a9d 100%)',
-                                '&:hover': {
-                                    background:
-                                        'linear-gradient(90deg, #185a9d 0%, #43cea2 100%)',
-                                },
-                            }}
-                        >
-                            View My Plan
-                        </Button>
-                    </CardContent>
-                </Card>
-            )}
+          ))}
         </Box>
-    );
+      </Box>
+
+      <ProfileDialog open={profileOpen} onClose={() => setProfileOpen(false)} />
+    </Box>
+  );
+};
+
+const GeneratePlanPage = () => {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const user = auth.currentUser;
+  const navigate = useNavigate();
+
+  const handleGenerate = async () => {
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    const userId = user?.uid;
+    if (!userId) {
+      setError('You must be logged in to generate a plan');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const jsonStringResponse = await createMealPlan(userId);
+      console.log('GeneratePlanPage - Raw JSON String Response from createMealPlan:', jsonStringResponse);
+      
+      let parsedResponse;
+      try {
+        parsedResponse = JSON.parse(jsonStringResponse);
+      } catch (parseError) {
+        console.error('GeneratePlanPage - Failed to parse JSON response:', parseError);
+        setError('Failed to parse the generated plan data. The format was unexpected.');
+        setLoading(false);
+        return;
+      }
+      
+      console.log('GeneratePlanPage - Parsed API Response:', parsedResponse);
+
+      if (parsedResponse && parsedResponse.plan && Array.isArray(parsedResponse.plan)) {
+        setResult(parsedResponse.description || "Meal plan generated successfully!");
+        console.log('GeneratePlanPage - Navigating with plan:', parsedResponse.plan);
+        navigate('/dashboard', { state: { generatedPlan: parsedResponse.plan as MealPlanDay[] } });
+      } else {
+        console.error('GeneratePlanPage - Parsed response did not contain a valid plan property:', parsedResponse);
+        setError('Failed to process the generated plan. The parsed response structure might be incorrect or plan is missing.');
+      }
+    } catch (err) {
+      console.error('GeneratePlanPage - Error calling createMealPlan or during processing:', err);
+      setError('Failed to generate plan. Complete your profile and medical conditions.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        width: '100%',
+        background: 'linear-gradient(120deg, #43cea2 0%, #185a9d 100%)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        pb: 0,
+      }}
+    >
+      <Box sx={{ maxWidth: 700, mb: 4, px: 4, textAlign: 'center' }}>
+        <AutoAwesomeIcon sx={{ fontSize: 48, color: '#FFC107', mb: 1 }} />
+        <Typography variant="h2" sx={{ color: '#fff', fontWeight: 900, mb: 1 }}>
+          Let's create your next plan!
+        </Typography>
+        <Typography variant="h5" sx={{ color: '#FFC107', mb: 2 }}>
+          Our AI will generate a personalized meal for you.
+        </Typography>
+      </Box>
+
+      <Card sx={{ ...glassCard, maxWidth: 500, p: 4, boxShadow: 8 }}>
+        <Typography variant="h5" sx={{ color: '#004D40', fontWeight: 'bold', textAlign: 'center' }}>
+          Ready to transform your health journey?
+        </Typography>
+        <Typography variant="body1" sx={{ color: '#00796B', textAlign: 'center', mb: 2 }}>
+          Click the button below to generate your personalized plan based on your profile and goals.
+        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+        <Button
+          variant="contained"
+          onClick={handleGenerate}
+          disabled={loading}
+          sx={{
+            px: 6,
+            py: 2,
+            fontWeight: 'bold',
+            fontSize: 20,
+            borderRadius: 3,
+            background: 'linear-gradient(90deg, #FFC107 0%, #43cea2 100%)',
+            color: '#004D40',
+            boxShadow: 2,
+            textAlign: 'center',
+          }}
+        >
+          {loading ? <CircularProgress size={28} color="inherit" /> : 'Generate My Plan'}
+        </Button>
+        </Box>
+      </Card>
+
+      {error && (
+        <Typography variant="body2" sx={{ color: 'red', mt: 2 }}>
+          {error}
+        </Typography>
+      )}
+      {result && (
+        <Typography variant="body2" sx={{ color: '#004D40', mt: 2 }}>
+          {result}
+        </Typography>
+      )}
+    </Box>
+  );
 };
 
 const medicalConditionsList = [

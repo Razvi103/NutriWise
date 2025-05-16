@@ -109,7 +109,7 @@ const HomePage: React.FC = () => (
           paragraph
           sx={{ mb: 5, opacity: 0.9 }}
         >
-          Personalized nutrition and fitness plans designed for your unique
+          Personalized nutrition designed for your unique
           goals and needs. Achieve sustainable results with science-backed
           recommendations.
         </Typography>
@@ -154,11 +154,6 @@ const HomePage: React.FC = () => (
           image={main5Image}
           title="Personalized Meal Plans"
           description="Delicious and balanced meal plans tailored to your dietary preferences, calorie needs, and fitness objectives."
-        />
-        <FlipCard
-          image={imageAvif}
-          title="Custom Workout Routines"
-          description="Effective workout programs designed for your fitness level, available equipment, and desired outcomes (weight loss, muscle gain, etc.)."
         />
         <FlipCard
           image={medicalImage}

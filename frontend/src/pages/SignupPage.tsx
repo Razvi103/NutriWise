@@ -58,7 +58,7 @@ const SignupPage: React.FC = () => {
               Join NutriWise today and transform your health and fitness
             </Typography>
             <Typography variant="body1" sx={{ opacity: 0.8 }}>
-              Get personalized meal plans, custom workout routines, and expert
+              Get personalized meal plans and expert
               guidance to achieve your health goals.
             </Typography>
           </Box>

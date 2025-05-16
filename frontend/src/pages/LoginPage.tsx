@@ -58,7 +58,7 @@ const LoginPage: React.FC = () => {
               Continue your journey to a healthier lifestyle with NutriWise
             </Typography>
             <Typography variant="body1" sx={{ opacity: 0.8 }}>
-              Access your personalized nutrition and fitness plans, track your
+              Access your personalized nutrition plans, track your
               progress, and achieve your goals.
             </Typography>
           </Box>

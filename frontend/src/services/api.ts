@@ -1,3 +1,4 @@
+/* eslint-disable*/
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:8001';
@@ -61,5 +62,16 @@ export const createUser = async (userId: string) => {
     });
   } catch (error) {
     throw new Error('Failed to create user');
+  }
+};
+
+export const createMealPlan = async (userId: string) => {
+  try {
+    const res = await axios.get(`${API_BASE_URL}/api/meal_plans/create_meal_plan`, {
+      params: { user_id: userId },
+    });
+    return res.data;
+  } catch (error) {
+    throw new Error('Failed to create meal plan');
   }
 };
