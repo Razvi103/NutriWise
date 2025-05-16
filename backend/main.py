@@ -6,10 +6,7 @@ from starlette.middleware.cors import CORSMiddleware
 from fastapi import Depends
 from models.user import User
 from pydantic import BaseModel
-from api.routes import users
-from api.routes import uploaded_files
-
-
+from api.routes import users, uploaded_files, meal_plans
 
 
 root = logging.getLogger()
@@ -29,6 +26,8 @@ def make_app():
 
     _app.include_router(users.router)
     _app.include_router(uploaded_files.router)
+    _app.include_router(meal_plans.router)
+
 
     _app.add_middleware(
         CORSMiddleware,
