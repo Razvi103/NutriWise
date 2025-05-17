@@ -79,15 +79,15 @@ def get_user_most_recent_meal_plan(user_id : str, db_session=Depends(get_db_sess
         }
         for item in items
     ]
-    content = json.dumps({
+    content = {
         "meal_plan_id": latest_plan.id,
         "name": latest_plan.name,
         "description": latest_plan.description,
         "date_created": str(latest_plan.date_created),
         "plan": items_data
-    })
+    }
 
-    return JSONResponse(content=content)
+    return content
 
 
 @router.post("/create_meal_plan")
@@ -197,4 +197,4 @@ Remember to respond always with a valid JSON format!
 
     db_session.commit()
 
-    return "Meal plan created SUCCESSFULLY"
+    return json_response_text

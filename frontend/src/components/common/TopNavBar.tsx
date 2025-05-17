@@ -35,16 +35,32 @@ const TopNavBar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
-  const user = auth.currentUser;
-  const email = user?.email || '';
+  
+  const [currentUser, setCurrentUser] = useState(auth.currentUser);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      console.log("[DEBUG] TopNavBar Auth state changed:", user ? user.uid : 'logged out');
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const email = currentUser?.email || '';
 
   const getInitials = () => {
     if (!email) return 'U';
     return email.split('@')[0].slice(0, 2).toUpperCase();
   };
 
-  const handleLogout = () => {
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      navigate('/');
+    } catch (error) {
+      console.error("Failed to log out:", error);
+    }
   };
 
   return (

@@ -67,11 +67,22 @@ export const createUser = async (userId: string) => {
 
 export const createMealPlan = async (userId: string) => {
   try {
-    const res = await axios.get(`${API_BASE_URL}/api/meal_plans/create_meal_plan`, {
+    const res = await axios.post(`${API_BASE_URL}/api/meal_plans/create_meal_plan`, null, {
       params: { user_id: userId },
     });
     return res.data;
   } catch (error) {
     throw new Error('Failed to create meal plan');
+  }
+};
+
+export const getUserMealPlan = async (userId: string) => {
+  try {
+    const res = await axios.get(`${API_BASE_URL}/api/meal_plans/get_user_meal_plan`, {
+      params: { user_id: userId },
+    });
+    return res.data;
+  } catch (error) {
+    throw new Error('Failed to get user meal plan');
   }
 };

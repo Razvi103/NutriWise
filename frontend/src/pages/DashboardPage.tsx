@@ -18,6 +18,7 @@ import ProfileDialog from './ProfileDialog';
 import mealImg from '../assets/Meal/mealplans.png';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import { getUserMealPlan } from '../services/api';
 
 interface UserProfile {
   name: string;
@@ -81,43 +82,70 @@ const DashboardHome = () => {
   const [plan, setPlan] = useState<MealPlanDay[]>([]);
   const location = useLocation();
   const user = auth.currentUser;
+  const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('DashboardHome location object:', location);
-    if (location.state?.generatedPlan) {
-      console.log('Received generatedPlan in DashboardHome:', location.state.generatedPlan);
-      setPlan(location.state.generatedPlan as MealPlanDay[]);
-    } else {
-      console.log('No generatedPlan found in location.state for DashboardHome.');
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      if (firebaseUser) {
+        const userId = firebaseUser.uid;
+        console.log("[DEBUG] Auth state changed, user is logged in:", userId);
+        fetchProfile(userId);
+        fetchMealPlan(userId);
+      } else {
+        console.log("[DEBUG] Auth state changed, user is logged out.");
+        setLoading(false);
+        setProfile(null);
+        setPlan([]);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const fetchProfile = async (userId: string) => {
+    try {
+      setLoading(true);
+      const data = await getProfile(userId);
+      setProfile({
+        name: '',
+        age: data.age?.toString() || '',
+        gender: data.sex || '',
+        weight: data.weight?.toString() || '',
+        height: data.height?.toString() || '',
+        activity: data.activity_level || '',
+        goal: data.fitness_goal || '',
+      });
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+      setProfile(null);
+    } finally {
     }
-  }, [location, location.state]);
+  };
 
-  useEffect(() => {
-    console.log('DashboardHome plan state updated:', plan);
-  }, [plan]);
-
-  useEffect(() => {
-    if (user) {
-      getProfile(user.uid)
-        .then((data) => {
-          setProfile({
-            name: '',
-            age: data.age?.toString() || '',
-            gender: data.sex || '',
-            weight: data.weight?.toString() || '',
-            height: data.height?.toString() || '',
-            activity: data.activity_level || '',
-            goal: data.fitness_goal || '',
-          });
-        })
-        .catch(error => {
-          console.error("Failed to fetch profile:", error);
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
+  const fetchMealPlan = async (userId: string) => {
+    try {
+      const response = await getUserMealPlan(userId);
+      console.log('GeneratePlanPage - API Response:', response);
+      if (response?.plan && Array.isArray(response.plan)) {
+        setPlan(response.plan as MealPlanDay[]);
+      } else {
+        console.warn('No valid meal plan found in response.');
+        console.log('[DEBUG] Response causing warning:', response);
+        setPlan([]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch user meal plan:', err);
+      setPlan([]);
     }
-  }, [user]);
+  };
+
+  useEffect(() => {
+    if (profile !== null || plan.length > 0) {
+        setLoading(false);
+    } else if (user && profile === null && plan.length === 0) {
+        setLoading(false);
+    }
+  }, [profile, plan, user]);
 
   const isProfileIncomplete =
     !loading &&
@@ -241,38 +269,26 @@ const GeneratePlanPage = () => {
     setError(null);
     setResult(null);
     const userId = user?.uid;
+  
     if (!userId) {
       setError('You must be logged in to generate a plan');
       setLoading(false);
       return;
     }
-
+  
     try {
-      const jsonStringResponse = await createMealPlan(userId);
-      console.log('GeneratePlanPage - Raw JSON String Response from createMealPlan:', jsonStringResponse);
-      
-      let parsedResponse;
-      try {
-        parsedResponse = JSON.parse(jsonStringResponse);
-      } catch (parseError) {
-        console.error('GeneratePlanPage - Failed to parse JSON response:', parseError);
-        setError('Failed to parse the generated plan data. The format was unexpected.');
-        setLoading(false);
-        return;
-      }
-      
-      console.log('GeneratePlanPage - Parsed API Response:', parsedResponse);
-
-      if (parsedResponse && parsedResponse.plan && Array.isArray(parsedResponse.plan)) {
-        setResult(parsedResponse.description || "Meal plan generated successfully!");
-        console.log('GeneratePlanPage - Navigating with plan:', parsedResponse.plan);
-        navigate('/dashboard', { state: { generatedPlan: parsedResponse.plan as MealPlanDay[] } });
+      const response = await createMealPlan(userId);
+      console.log('GeneratePlanPage - API Response:', response);
+  
+      if (response && response.plan && Array.isArray(response.plan)) {
+        setResult(response.description || "Meal plan generated successfully!");
+        navigate('/dashboard');
       } else {
-        console.error('GeneratePlanPage - Parsed response did not contain a valid plan property:', parsedResponse);
-        setError('Failed to process the generated plan. The parsed response structure might be incorrect or plan is missing.');
+        console.error('GeneratePlanPage - Response missing plan:', response);
+        setError('Failed to process the generated plan. Invalid structure.');
       }
     } catch (err) {
-      console.error('GeneratePlanPage - Error calling createMealPlan or during processing:', err);
+      console.error('GeneratePlanPage - Error during generation:', err);
       setError('Failed to generate plan. Complete your profile and medical conditions.');
     } finally {
       setLoading(false);
