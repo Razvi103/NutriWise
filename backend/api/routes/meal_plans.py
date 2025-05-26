@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from fastapi import APIRouter, Depends, Response, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 from data.database import get_db_session
@@ -11,13 +12,23 @@ from models.health_report import HealthReport
 from pydantic import BaseModel
 from sqlalchemy import desc
 from datetime import date
+from ..services.recipe_embedding_service import load_vectordb, get_qa_chain, LocalServerEmbeddings
 from ..services.meal_plan_formatter import strip_json_prefix, strip_json_suffix
 import json
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/meal_plans", tags=["MealPlans"], include_in_schema=False)
-
+BASE_DIR = Path(__file__).resolve().parent.parent.parent    # -> backend/
+CHROMA_DIR = BASE_DIR / "chroma_recipes"
 base_url = "http://127.0.0.1:1234/v1"
+
+embeddings = LocalServerEmbeddings(base_url=base_url)
+
+
+recipes_db = load_vectordb(
+    persist_directory=str(CHROMA_DIR),
+    embedding=embeddings,
+)
 api_key = "lm-studio"
 llm_model = "phi-4"
 
@@ -157,8 +168,16 @@ The response should have the following json format, and only respond like it. Al
 Remember to respond always with a plan that has 7 items (one for each day of the week) in the order of the week days!
 Remember to respond always with a valid JSON format!
     """
-    response = llm.invoke([HumanMessage(content=PROMPT)])
-    response_text = response.content
+    rag_query = (
+        f"You are a nutrition assistant. Based on the context, pick 7 suitable recipes "
+        "(one per weekday) and assemble a daily meal plan with breakfast, lunch, dinner, and a snack. "
+        "Provide macros estimates. Respond in JSON with keys: name, description, plan. "
+        f"Instruction: {PROMPT}"
+    )
+    qa_chain = get_qa_chain(llm, recipes_db)
+    response = qa_chain({"query": rag_query})
+    response_text = response["result"]
+    print(response_text)
     response_text = strip_json_suffix(strip_json_prefix(response_text))
     json_response_text = json.loads(response_text)
 
