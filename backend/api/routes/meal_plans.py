@@ -175,8 +175,8 @@ Remember to respond always with a valid JSON format!
         f"Instruction: {PROMPT}"
     )
     qa_chain = get_qa_chain(llm, recipes_db)
-    response = qa_chain.invoke([HumanMessage(content=rag_query)])
-    response_text = response.content
+    response = qa_chain({"query": rag_query})
+    response_text = response["result"]
     print(response_text)
     response_text = strip_json_suffix(strip_json_prefix(response_text))
     json_response_text = json.loads(response_text)
