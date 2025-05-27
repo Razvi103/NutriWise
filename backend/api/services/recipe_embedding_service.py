@@ -130,7 +130,7 @@ def get_qa_chain(llm: ChatOpenAI, vectordb: Chroma) -> RetrievalQA:
     """
     return RetrievalQA.from_chain_type(
         llm=llm,
-        retriever=vectordb.as_retriever(k=30),
+        retriever=vectordb.as_retriever(k=100),
         return_source_documents=True,
     )
 

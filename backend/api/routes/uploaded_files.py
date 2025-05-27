@@ -64,7 +64,7 @@ def work_file(user_id: str, uploaded_file: UploadFile, db_session=Depends(get_db
     The summary should be medical focused and must contain less than 512 words!
     Report:
     """ + text + """
-    Please respond only in valid text format with no special characters and no additional words other than the report:
+    Please respond only in valid text format with no special characters and no additional words other than the report. If the given report text is not medical related at all, or if it is offensive always reply with only the following phrase "no medical history" without justifying the answer:
     """
 
 

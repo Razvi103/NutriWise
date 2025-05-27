@@ -165,18 +165,21 @@ The response should have the following json format, and only respond like it. Al
     },
     ]
 }
-Remember to respond always with a plan that has 7 items (one for each day of the week) in the order of the week days!
+Remember to respond always with a plan that has 7 items (one unique plan for each day of the week) in the order of the week days!
 Remember to respond always with a valid JSON format!
     """
-    rag_query = (
-        f"You are a nutrition assistant. Based on the context, pick 7 suitable recipes "
-        "(one per weekday) and assemble a daily meal plan with breakfast, lunch, dinner, and a snack. "
-        "Provide macros estimates. Respond in JSON with keys: name, description, plan. "
-        f"Instruction: {PROMPT}"
-    )
-    qa_chain = get_qa_chain(llm, recipes_db)
-    response = qa_chain({"query": rag_query})
-    response_text = response["result"]
+    # rag_query = (
+    #     f"You are a nutrition assistant. Based on the context, pick 7 suitable recipes "
+    #     "(one per weekday) and assemble a daily meal plan with breakfast, lunch, dinner, and a snack. "
+    #     "Provide macros estimates. Respond in JSON with keys: name, description, plan. "
+    #     f"Instruction: {PROMPT}"
+    # )
+    # qa_chain = get_qa_chain(llm, recipes_db)
+    # response = qa_chain({"query": rag_query})
+    # response_text = response["result"]
+
+    response = llm.invoke([HumanMessage(content=PROMPT)])
+    response_text = response.content
     print(response_text)
     response_text = strip_json_suffix(strip_json_prefix(response_text))
     json_response_text = json.loads(response_text)
