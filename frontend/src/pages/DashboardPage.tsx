@@ -204,9 +204,9 @@ const DashboardHome = () => {
         </Typography>
 
         <Button
-          variant="outlined"
+          variant="contained"
           onClick={() => window.print()}
-          sx={{ mb: 4, color: '#004D40', borderColor: '#FFC107', fontWeight: 600 }}
+          sx={{ mb: 4, color: '#004D40', borderColor: '#FFC107', fontWeight: 600, backgroundColor:  '#FFC107'  }}
         >
           Print or Export to PDF
         </Button>
