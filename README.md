@@ -69,23 +69,54 @@ Base URL: `http://localhost:8001`
   - `description`
   - `plan` (list of 7 days, each with breakfast, lunch, dinner, snack, macros)
 
-Example:
-```json
+## Prompts Used
+
+### `uploaded_files.py` – Health Report Summarization Prompt
+```text
+You are a helpful assistant specialized in medical tasks.
+You will be given a health report of any type and should summarize it extensively, keeping attention to health problems and unhealthy levels.
+The summary should be medical focused and must contain less than 512 words!
+Please respond only in valid text format with no special characters and no additional words other than the report.
+If the given report text is not medical related at all, or if it is offensive, always reply with:
+"no medical history"
+```
+
+### `meal_plans.py` – Meal Plan Generation Prompt
+```text
+You are a helpful assistant specialized in nutrition.
+Make a personalized meal plan for every day of the week that includes on each day: breakfast, lunch, dinner and a snack.
+
+User Information:
+Weight: [x]
+Height: [x]
+Age: [x]
+BMI: [x]
+Gender: [x]
+Fitness Goal: [x]
+Activity Level: [x]
+Dietary Preferences: [x]
+Medical Conditions: [x]
+Medical History (can be empty): [x]
+
+Response Format:
 {
-  "name": "Weight Loss Vegan Plan",
-  "description": "Low-calorie, vegan-friendly weekly plan",
+  "name": str,
+  "description": str,
   "plan": [
     {
-      "meal_slot": "Monday",
-      "breakfast": "Oatmeal with almond milk",
-      "lunch": "Quinoa salad",
-      "dinner": "Tofu stir fry",
-      "snack": "Fruit smoothie",
-      "macros": "Protein: 70g, Carbs: 200g, Fats: 50g, Calories: 1800"
+      "meal_slot": "str",
+      "breakfast": "str",
+      "lunch": "str",
+      "dinner": "str",
+      "snack": "str",
+      "macros": "str"
     }
   ]
 }
+
+Always return exactly 7 items in the "plan" list for each day of the week in order. Always respond in valid JSON format.
 ```
+
 
 > We also implemented `strip_json_prefix` and `strip_json_suffix` utilities to sanitize LLM output and guarantee valid JSON for parsing.
 
